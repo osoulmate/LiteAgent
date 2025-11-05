@@ -1,14 +1,17 @@
 import os
-import dashscope
 from langchain.agents import initialize_agent, Tool, AgentType
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
+import dashscope
 from typing import Any, Dict, List, Mapping, Optional
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM
+
 # 设置千问API Key (从阿里云控制台获取)
-dashscope.api_key="your_qwen_api_key_here"
-# 自定义千问模型的LangChain包装器
+dashscope.api_key = os.getenv("DASHSCOPE_API_KEY")   # 确保变量名一致
+#print(dashscope.api_key)
+assert dashscope.api_key, "请先在环境变量里设置 DASHSCOPE_API_KEY"
+
 class DynamicToolCreator:
     def __init__(self, llm):
         self.llm = llm
@@ -28,6 +31,7 @@ class DynamicToolCreator:
 5. 生成的代码不含诸如```这样的markdown风格的代码格式化字符
 
 只返回纯净的Python代码，不要有其他解释：
+
 """,
             input_variables=["user_request"]
         )
@@ -75,7 +79,7 @@ class DynamicToolCreator:
                 return f"工具执行错误: {e}"
         else:
             return f"工具 {tool_name} 不存在"
-class LLM(LLM):
+class MyLLM(LLM):
     """通义千问模型的LangChain包装器"""
 
     model_name: str = "qwen-plus"  # 可选: qwen-turbo, qwen-plus, qwen-max
@@ -135,7 +139,7 @@ tools = [
 ]
 
 # 初始化千问模型
-llm = LLM(model_name="qwen-plus-2025-04-28", temperature=0.1)
+llm = MyLLM(model_name="qwen-plus-2025-04-28", temperature=0.1)
 tool_creator = DynamicToolCreator(llm)
 
 # 让模型创建工具

@@ -9,10 +9,10 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models.llms import LLM
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from litellm import completion
-import os
-os.environ['DEEPSEEK_API_KEY'] = "your_deepseek_api_key_here"
-# ----------------- 千问 LLM 包装 -----------------
-class LLM(LLM):
+
+assert os.environ['DEEPSEEK_API_KEY'], "请先在环境变量里设置 DEEPSEEK_API_KEY"
+
+class MyLLM(LLM):
     """LangChain 包装 DeepSeek 模型（官方 deepseek 包）"""
     model_name: str = "deepseek/deepseek-reasoner"   # 或 deepseek-coder
     temperature: float = 0
@@ -116,7 +116,10 @@ class SelfFixedToolCreator:
         for i in range(self.max_loop):
             err = self._validate(func_code, tests)
             if err is None:
+                print(f"第{i+1}轮生成的代码通过测试验证...")
                 return func_code  # 成功
+            else:
+                print(f"第{i+1}轮生成的代码验证出错...\n{err}")
             # 构造修复 prompt
             fix_tmpl = PromptTemplate(
                 template="""你之前写的 Python 函数运行失败，请基于错误信息输出**完整修正后的代码**（非 diff）。
@@ -136,7 +139,7 @@ class SelfFixedToolCreator:
 """,
                 input_variables=["user_request", "func_code", "error"]
             )
-            func_code = "def " + (fix_tmpl | self.llm).invoke({
+            func_code = (fix_tmpl | self.llm).invoke({
                 "user_request": user_request,
                 "func_code": func_code,
                 "error": err
@@ -154,7 +157,10 @@ class SelfFixedToolCreator:
             return "未通过安全过滤", None
         tests = self._generate_tests(v1)
         if not tests:
-            return "测试生成失败", None
+            return "测试用例生成失败", None
+        else:
+            print("测试用例生成结果...")
+            print(tests)
 
         print("[2] 开始自修复循环...")
         final_code = self._loop_fix(user_request, v1, tests)
@@ -182,7 +188,7 @@ class SelfFixedToolCreator:
 
 # ----------------- 演示 -----------------
 if __name__ == "__main__":
-    llm = LLM(model_name="deepseek/deepseek-reasoner", temperature=0.1)
+    llm = MyLLM(model_name="deepseek/deepseek-reasoner", temperature=0.1)
     factory = SelfFixedToolCreator(llm, max_loop=3)
 
     need = "将英文文本转为摩斯密码，只返回摩斯字符串"
