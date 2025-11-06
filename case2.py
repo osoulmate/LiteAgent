@@ -1,3 +1,8 @@
+"""
+AI生成并自修复 Python 摩斯密码生成工具示例：
+1.可以实现根据用户需求描述自动生成一个Python函数，并通过自修复循环确保代码正确性。
+2.同时用生成的函数实现根据输入的文字生成摩斯密码的功能。
+"""
 import os
 from langchain.agents import initialize_agent, Tool, AgentType
 from langchain_core.prompts import PromptTemplate
