@@ -92,9 +92,10 @@ class SelfFixedToolCreator:
         )
         txt = (tmpl | self.llm).invoke({"func_code": func_code}).strip()
         try:
+            print(f"未序列化的测试用例:\n{txt}")
             return json.loads(txt)
         except Exception as e:
-            print(e)
+            print(f"测试用例JSON序列化异常:{e}")
             return []
 
     # ---- 3. 静态安全过滤 ----
@@ -167,15 +168,14 @@ class SelfFixedToolCreator:
             return "未通过安全过滤", None
         tests = self._generate_tests(v1)
         if not tests:
-            print(tests)
-            #return "测试用例生成失败", None
+            print("测试用例生成失败，忽略并继续...")
         else:
             print("测试用例生成结果...")
             print(tests)
 
         print("[2] 开始自修复循环...")
         final_code = self._loop_fix(user_request, v1, tests)
-        print(f"生成的代码:\n{final_code}")
+        print(f"验证通过的代码:\n{final_code}")
         if final_code is None:
             return "自修复失败", None
 
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     need = "以root身份使用ssh远程登录主机192.168.1.1，登录验证方式变量key_path，登录ssh端口为11722"
     msg, tool = factory.create_tool(need)
     args = ('ls', key_path)
-    kwargs = {"host": "192.168.1.1", "port": 11722,"username":"root","password":"","key_path":key_path,"cmd":"ls -al"}
+    kwargs = {"host": "192.168.1.1", "port": 11722,"username":"root","password":"","key_path":key_path,"cmd":"ls -al;ls -al /"}
     print(msg)
     if tool:
         print("测试样例:", factory.invoke("dynamic_tool_1", *args, **kwargs))
