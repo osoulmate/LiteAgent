@@ -17,6 +17,37 @@ dashscope.api_key = os.getenv("DASHSCOPE_API_KEY")   # 确保变量名一致
 #print(dashscope.api_key)
 assert dashscope.api_key, "请先在环境变量里设置 DASHSCOPE_API_KEY"
 
+class MyLLM(LLM):
+    """通义千问模型的LangChain包装器"""
+
+    model_name: str = "qwen-plus"  # 可选: qwen-turbo, qwen-plus, qwen-max
+    temperature: float = 0
+
+    @property
+    def _llm_type(self) -> str:
+        return "qwen"
+
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> str:
+        from dashscope import Generation
+
+        response = Generation.call(
+            model=self.model_name,
+            prompt=prompt,
+            temperature=self.temperature,
+            **kwargs
+        )
+
+        if response.status_code == 200:
+            return response.output.text
+        else:
+            return f"Error: {response.code} - {response.message}"
+
 class DynamicToolCreator:
     def __init__(self, llm):
         self.llm = llm
@@ -84,36 +115,6 @@ class DynamicToolCreator:
                 return f"工具执行错误: {e}"
         else:
             return f"工具 {tool_name} 不存在"
-class MyLLM(LLM):
-    """通义千问模型的LangChain包装器"""
-
-    model_name: str = "qwen-plus"  # 可选: qwen-turbo, qwen-plus, qwen-max
-    temperature: float = 0
-
-    @property
-    def _llm_type(self) -> str:
-        return "qwen"
-
-    def _call(
-        self,
-        prompt: str,
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
-        **kwargs: Any,
-    ) -> str:
-        from dashscope import Generation
-
-        response = Generation.call(
-            model=self.model_name,
-            prompt=prompt,
-            temperature=self.temperature,
-            **kwargs
-        )
-
-        if response.status_code == 200:
-            return response.output.text
-        else:
-            return f"Error: {response.code} - {response.message}"
 
 # 定义工具函数
 def search_web(query: str) -> str:
