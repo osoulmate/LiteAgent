@@ -36,4 +36,4 @@ def safe_execute_code(code: str, func_name: str, *args, **kwargs):
 
     except Exception as e:
         return f"沙箱执行安全拦截或错误: {str(e)}"
-``
+```
